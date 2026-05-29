@@ -1,11 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Головна</title>
+    <title>Головна — Система бронювання</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Ласкаво просимо до системи бронювання!</h1>
+
+    <div class="container">
+        <div class="header-box">
+            <h1>Вітаємо, {{ username }}!</h1>
+            <a href="{{ url_for('logout') }}" class="btn-logout">Вийти з акаунту</a>
+        </div>
+
+        <h2 class="section-title">Доступні готельні номери</h2>
+
+        <div class="hotel-grid">
+            {% for product in products %}
+                <div class="hotel-card">
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}" class="hotel-image">
+                    <div class="hotel-info">
+                        <div>
+                            <h3 class="hotel-name">{{ product.name }}</h3>
+                            <p class="hotel-desc">{{ product.description }}</p>
+                        </div>
+                        <div>
+                            <p class="hotel-price">{{ product.price }} грн / доба</p>
+                            <button class="btn-book">Забронювати</button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
 </body>
 </html>

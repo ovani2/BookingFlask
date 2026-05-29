@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from database import db, User  # Твоя окрема база даних
+from database import db, User, Product
+from hotels import generate_hotels
 
 app = Flask(__name__)
 
@@ -12,11 +13,13 @@ db.init_app(app)
 
 with app.app_context():
     db.create_all()
+    generate_hotels()
 
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    products = db.session.execute(db.select(Product)).scalars().all()
+    return render_template('index.html', products=products)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -25,14 +28,11 @@ def register():
         username = request.form['username']
         password = request.form['password']
 
-        stmt = db.select(User).filter_by(username=username)
-        user_exists = db.session.execute(stmt).scalar_one_or_none()
-
-        if user_exists:
+        if db.session.execute(db.select(User).filter_by(username=username)).scalar_one_or_none():
             flash('Username already exists')
             return redirect(url_for('register'))
 
-        hashed_password = generate_password_hash(password, method='scrypt')
+        hashed_password = generate_password_hash(password)
         new_user = User(username=username, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
@@ -49,9 +49,7 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
-        stmt = db.select(User).filter_by(username=username)
-        user = db.session.execute(stmt).scalar_one_or_none()
-        
+        user = db.session.execute(db.select(User).filter_by(username=username)).scalar_one_or_none()
         if user and check_password_hash(user.password, password):
             flash('Login successful')
             return redirect(url_for('index'))
