@@ -10,16 +10,68 @@
 
     <div class="container" style="max-width: 800px; margin-top: 40px;">
         <div class="header-box">
-            <a href="/" style="text-decoration: none; color: #007bff; font-weight: bold;">← Назад до списку</a>
-            <h1 style="font-size: 20px; margin: 0;">Бронювання номера</h1>
+            <a href="/" style="text-decoration: none; color: #007bff; font-weight: bold;">← Назад до каталогу</a>
+            <h1 style="font-size: 20px; margin: 0;">Сторінка номера</h1>
         </div>
 
-        <div class="room-detail-box">
-            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="room-detail-image">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="flash-message-global">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="account-box" style="display: flex; gap: 25px; flex-wrap: wrap;">
+            <img src="{{ product.image_url }}" alt="{{ product.name }}" style="width: 100%; max-width: 350px; height: 240px; object-fit: cover; border-radius: 8px;">
             
-            <div class="room-detail-info">
+            <div style="flex: 1; min-width: 280px;">
                 <h2>{{ product.name }}</h2>
-                <p class="room-detail-desc">{{ product.description }}</p>
-                <p style="color: #17a2b8; font-weight: bold;">Базова ціна: {{ product.price }} грн / доба</p>
+                <p style="color: #666; line-height: 1.5;">{{ product.description }}</p>
+                <p style="font-size: 16px; color: #555;">Базова вартість: <strong>{{ product.price }} грн</strong> / доба</p>
                 
-                <hr>
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+
+                <form action="/room/{{ product.id }}" method="get" style="margin-bottom: 15px;">
+                    <label style="font-weight: bold; color: #444;">Оберіть к-сть днів (1-7):</label>
+                    <select name="days" onchange="this.form.submit()" style="padding: 6px; margin-left: 10px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold;">
+                        {% for i in range(1, 8) %}
+                            <option value="{{ i }}" {% if days == i %}selected{% endif %}>{{ i }} днів</option>
+                        {% endfor %}
+                    </select>
+                </form>
+
+                <p style="font-size: 20px; font-weight: bold; color: #17a2b8; margin: 15px 0;">Загальна ціна: {{ total_price }} грн</p>
+
+                <form action="/book/{{ product.id }}" method="post">
+                    <input type="hidden" name="booking_days" value="{{ days }}">
+                    <button type="submit" class="btn-confirm-booking">Забронювати на {{ days }} днів</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="account-box">
+            <h3>Відгуки про цей номер</h3>
+            
+            <form action="/add_review/{{ product.id }}" method="post" style="margin-bottom: 25px;">
+                <textarea name="review_text" placeholder="Залиште свій відгук про проживання тут..." required style="width: 100%; height: 70px; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; resize: none; font-family: Arial, sans-serif;"></textarea>
+                <button type="submit" class="btn-book" style="margin-top: 8px; width: auto; padding: 8px 20px; background-color: #28a745;">Опублікувати відгук</button>
+            </form>
+
+            <div class="reviews-list">
+                {% if reviews %}
+                    {% for review in reviews %}
+                        <div class="review-item">
+                            <strong>{{ review.username }} <span style="font-size: 11px; color: #999; font-weight: normal; margin-left: 10px;">{{ review.created_at.strftime('%d.%m.%Y %H:%M') }}</span></strong>
+                            <p style="margin: 5px 0 0 0; color: #444;">{{ review.text }}</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: #888; font-style: italic;">Відгуків про цей номер ще ніхто не залишав.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

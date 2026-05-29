@@ -23,21 +23,43 @@
         {% endwith %}
 
         <div class="account-box">
-            <h2>Ваші бронювання (Особистий кабінет)</h2>
-            {% if my_bookings %}
-                <div class="my-bookings-list">
-                    {% for book in my_bookings %}
-                        <div class="my-booking-item">
-                            <span><strong>{{ book.name }}</strong> (на {{ book.booking_days }} днів) — {{ book.price * book.booking_days }} грн</span>
-                            <form action="/cancel_booking/{{ book.id }}" method="post" style="margin: 0;">
-                                <button type="submit" class="btn-cancel">Скасувати бронювання</button>
-                            </form>
+            <h2>Особистий кабінет ({{ username }})</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h3>Ваші бронювання</h3>
+                    {% if my_bookings %}
+                        <div class="my-bookings-list">
+                            {% for book in my_bookings %}
+                                <div class="my-booking-item">
+                                    <span><strong>{{ book.name }}</strong> ({{ book.booking_days }} дн.) — {{ book.price * book.booking_days }} грн</span>
+                                    <form action="/cancel_booking/{{ book.id }}" method="post" style="margin: 0;">
+                                        <button type="submit" class="btn-cancel">Скасувати</button>
+                                    </form>
+                                </div>
+                            {% endfor %}
                         </div>
-                    {% endfor %}
+                    {% else %}
+                        <p style="color: #777; font-style: italic; font-size: 14px;">Немає активних бронювань.</p>
+                    {% endif %}
                 </div>
-            {% else %}
-                <p style="color: #777; font-style: italic;">Ви ще не забронювали жодного номера.</p>
-            {% endif %}
+
+                <div>
+                    <h3>Ваші відгуки на сайті</h3>
+                    {% if my_reviews %}
+                        <div class="my-bookings-list" style="max-height: 200px; overflow-y: auto;">
+                            {% for r in my_reviews %}
+                                <div style="background: #fdfdfd; padding: 8px; border-radius: 4px; border-left: 3px solid #17a2b8; margin-bottom: 8px; font-size: 13px;">
+                                    <span style="color: #666; font-size: 11px;">{{ r.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                                    <p style="margin: 4px 0 0 0; color: #333;">{{ r.text }}</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p style="color: #777; font-style: italic; font-size: 14px;">Ви ще не залишали відгуків.</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
         <h2 class="section-title">Доступні готельні номери</h2>
@@ -57,7 +79,7 @@
                             {% if product.is_booked %}
                                 <button class="btn-book btn-booked-status" disabled>Заброньовано</button>
                             {% else %}
-                                <a href="/room/{{ product.id }}" class="btn-detail-link">Дивитися номер</a>
+                                <a href="/room/{{ product.id }}" class="btn-book" style="display: block; text-align: center; text-decoration: none; box-sizing: border-box;">Дивитися номер</a>
                             {% endif %}
                         </div>
                     </div>

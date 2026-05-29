@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
-from database import db, User, Product
+from database import db, User, Product, Review
 from hotels import generate_hotels
 
 app = Flask(__name__)
@@ -22,11 +22,22 @@ def index():
         return redirect(url_for('login'))
         
     products = db.session.execute(db.select(Product)).scalars().all()
+    
     my_bookings = db.session.execute(
         db.select(Product).filter_by(booked_by=session['user_id'], is_booked=True)
     ).scalars().all()
     
-    return render_template('index.html', products=products, my_bookings=my_bookings, username=session.get('username'))
+    my_reviews = db.session.execute(
+        db.select(Review).filter_by(user_id=session['user_id']).order_by(Review.created_at.desc())
+    ).scalars().all()
+    
+    return render_template(
+        'index.html', 
+        products=products, 
+        my_bookings=my_bookings, 
+        my_reviews=my_reviews,
+        username=session.get('username')
+    )
 
 
 @app.route('/room/<int:product_id>')
@@ -45,7 +56,11 @@ def room_detail(product_id):
     
     total_price = product.price * days
     
-    return render_template('room.html', product=product, days=days, total_price=total_price)
+    reviews = db.session.execute(
+        db.select(Review).filter_by(product_id=product_id).order_by(Review.created_at.desc())
+    ).scalars().all()
+    
+    return render_template('room.html', product=product, days=days, total_price=total_price, reviews=reviews)
 
 
 @app.route('/book/<int:product_id>', methods=['POST'])
@@ -65,9 +80,9 @@ def book_hotel(product_id):
         product.booked_by = session['user_id']
         product.booking_days = days
         db.session.commit()
-        flash(f"Номер '{product.name}' успішно заброньовано на {days} днів!")
+        flash(f"Номер '{product.name}' успішно заброньовано!")
     else:
-        flash("Цей номер уже заброньовано іншим користувачем!")
+        flash("Цей номер уже заброньовано!")
         
     return redirect(url_for('index'))
 
@@ -84,9 +99,29 @@ def cancel_booking(product_id):
         product.booked_by = None
         product.booking_days = 0
         db.session.commit()
-        flash(f"Бронювання номера '{product.name}' скасовано.")
+        flash(f"Бронювання скасовано.")
         
     return redirect(url_for('index'))
+
+
+@app.route('/add_review/<int:product_id>', methods=['POST'])
+def add_review(product_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+        
+    text = request.form.get('review_text')
+    if text and text.strip() != "":
+        new_review = Review(
+            product_id=product_id,
+            user_id=session['user_id'],
+            username=session['username'],
+            text=text.strip()
+        )
+        db.session.add(new_review)
+        db.session.commit()
+        flash("Відгук успішно додано!")
+        
+    return redirect(url_for('room_detail', product_id=product_id))
 
 
 @app.route('/register', methods=['GET', 'POST'])
