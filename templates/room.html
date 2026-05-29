@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.name }} — Деталі</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="container" style="max-width: 800px; margin-top: 40px;">
+        <div class="header-box">
+            <a href="/" style="text-decoration: none; color: #007bff; font-weight: bold;">← Назад до списку</a>
+            <h1 style="font-size: 20px; margin: 0;">Бронювання номера</h1>
+        </div>
+
+        <div class="room-detail-box">
+            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="room-detail-image">
+            
+            <div class="room-detail-info">
+                <h2>{{ product.name }}</h2>
+                <p class="room-detail-desc">{{ product.description }}</p>
+                <p style="color: #17a2b8; font-weight: bold;">Базова ціна: {{ product.price }} грн / доба</p>
+                
+                <hr>

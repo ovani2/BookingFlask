@@ -14,11 +14,37 @@
             <a href="{{ url_for('logout') }}" class="btn-logout">Вийти з акаунту</a>
         </div>
 
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="flash-message-global">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="account-box">
+            <h2>Ваші бронювання (Особистий кабінет)</h2>
+            {% if my_bookings %}
+                <div class="my-bookings-list">
+                    {% for book in my_bookings %}
+                        <div class="my-booking-item">
+                            <span><strong>{{ book.name }}</strong> (на {{ book.booking_days }} днів) — {{ book.price * book.booking_days }} грн</span>
+                            <form action="/cancel_booking/{{ book.id }}" method="post" style="margin: 0;">
+                                <button type="submit" class="btn-cancel">Скасувати бронювання</button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="color: #777; font-style: italic;">Ви ще не забронювали жодного номера.</p>
+            {% endif %}
+        </div>
+
         <h2 class="section-title">Доступні готельні номери</h2>
 
         <div class="hotel-grid">
             {% for product in products %}
-                <div class="hotel-card">
+                <div class="hotel-card {% if product.is_booked %}card-disabled{% endif %}">
                     <img src="{{ product.image_url }}" alt="{{ product.name }}" class="hotel-image">
                     <div class="hotel-info">
                         <div>
@@ -27,7 +53,12 @@
                         </div>
                         <div>
                             <p class="hotel-price">{{ product.price }} грн / доба</p>
-                            <button class="btn-book">Забронювати</button>
+                            
+                            {% if product.is_booked %}
+                                <button class="btn-book btn-booked-status" disabled>Заброньовано</button>
+                            {% else %}
+                                <a href="/room/{{ product.id }}" class="btn-detail-link">Дивитися номер</a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

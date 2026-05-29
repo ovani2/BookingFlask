@@ -2,7 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import String, Float, ForeignKey, Text, DateTime, Boolean, Integer
 from datetime import datetime
-
+from sqlalchemy import String, Float, ForeignKey, Text, DateTime, Boolean, Integer
 class Base(DeclarativeBase):
     pass
 

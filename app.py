@@ -1,6 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
-from database import db, User, Product, Review
+from database import db, User, Product
 from hotels import generate_hotels
 
 app = Flask(__name__)
@@ -15,23 +15,38 @@ with app.app_context():
     db.create_all()
     generate_hotels()
 
+
 @app.route('/')
 def index():
     if 'user_id' not in session:
         return redirect(url_for('login'))
         
     products = db.session.execute(db.select(Product)).scalars().all()
-    
     my_bookings = db.session.execute(
         db.select(Product).filter_by(booked_by=session['user_id'], is_booked=True)
     ).scalars().all()
     
-    return render_template(
-        'index.html', 
-        products=products, 
-        my_bookings=my_bookings, 
-        username=session.get('username')
-    )
+    return render_template('index.html', products=products, my_bookings=my_bookings, username=session.get('username'))
+
+
+@app.route('/room/<int:product_id>')
+def room_detail(product_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+        
+    product = db.session.execute(db.select(Product).filter_by(id=product_id)).scalar_one_or_none()
+    if not product:
+        flash("Номер не знайдено!")
+        return redirect(url_for('index'))
+        
+    days = request.args.get('days', 1, type=int)
+    if days < 1: days = 1
+    if days > 7: days = 7
+    
+    total_price = product.price * days
+    
+    return render_template('room.html', product=product, days=days, total_price=total_price)
+
 
 @app.route('/book/<int:product_id>', methods=['POST'])
 def book_hotel(product_id):
@@ -56,6 +71,7 @@ def book_hotel(product_id):
         
     return redirect(url_for('index'))
 
+
 @app.route('/cancel_booking/<int:product_id>', methods=['POST'])
 def cancel_booking(product_id):
     if 'user_id' not in session:
@@ -72,25 +88,6 @@ def cancel_booking(product_id):
         
     return redirect(url_for('index'))
 
-@app.route('/get_reviews/<int:product_id>')
-def get_reviews(product_id):
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-    stmt = db.select(Review).filter_by(product_id=product_id).order_by(Review.created_at.desc())
-    reviews = db.session.execute(stmt).scalars().all()
-    return jsonify([{'username': r.username, 'text': r.text, 'date': r.created_at.strftime('%d.%m.%Y %H:%M')} for r in reviews])
-
-@app.route('/add_review/<int:product_id>', methods=['POST'])
-def add_review(product_id):
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-    text = request.form.get('review_text')
-    if not text or text.strip() == "":
-        return jsonify({'error': 'Empty'}), 400
-    new_review = Review(product_id=product_id, user_id=session['user_id'], username=session['username'], text=text.strip())
-    db.session.add(new_review)
-    db.session.commit()
-    return jsonify({'success': True, 'username': new_review.username, 'text': new_review.text, 'date': new_review.created_at.strftime('%d.%m.%Y %H:%M')})
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -106,6 +103,7 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -118,6 +116,7 @@ def login():
             return redirect(url_for('index'))
         flash('Помилка входу!')
     return render_template('login.html')
+
 
 @app.route('/logout')
 def logout():
