@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import db, User, Product, Review
 from hotels import generate_hotels
+import datetime
 
 app = Flask(__name__)
 
