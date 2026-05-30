@@ -55,7 +55,29 @@ def room_detail(product_id):
     if days < 1: days = 1
     if days > 7: days = 7
     
-    total_price = product.price * days
+    if days == 1:
+        total_price = product.price
+    
+    if days == 2:
+        total_price = product.price * 1.9
+    
+    if days == 3:
+        total_price = product.price * 1.8
+    
+    if days == 4:
+        total_price = product.price * 1.7
+    
+    if days == 5:
+        total_price = product.price * 1.6
+    
+    if days == 6:
+        total_price = product.price * 1.5
+    
+    if days == 7:
+        total_price = product.price * 1.4
+    
+    if days > 7:
+        total_price = product.price * 1.4 * days
     
     reviews = db.session.execute(
         db.select(Review).filter_by(product_id=product_id).order_by(Review.created_at.desc())
