@@ -13,6 +13,7 @@ class User(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(256), nullable=False)
+    balance: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
 
 class Product(db.Model):
     __tablename__ = "products"

@@ -21,23 +21,27 @@ with app.app_context():
 def index():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-        
+
     products = db.session.execute(db.select(Product)).scalars().all()
-    
+
     my_bookings = db.session.execute(
         db.select(Product).filter_by(booked_by=session['user_id'], is_booked=True)
     ).scalars().all()
-    
+
     my_reviews = db.session.execute(
         db.select(Review).filter_by(user_id=session['user_id']).order_by(Review.created_at.desc())
     ).scalars().all()
-    
+
+    user = db.session.execute(db.select(User).filter_by(id=session['user_id'])).scalar_one_or_none()
+    balance = user.balance if user else 0.0
+
     return render_template(
-        'index.html', 
-        products=products, 
-        my_bookings=my_bookings, 
+        'index.html',
+        products=products,
+        my_bookings=my_bookings,
         my_reviews=my_reviews,
-        username=session.get('username')
+        username=session.get('username'),
+        balance=balance
     )
 
 
@@ -90,23 +94,52 @@ def room_detail(product_id):
 def book_hotel(product_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-        
+
     days = int(request.form.get('booking_days', 1))
     if days < 1 or days > 7:
         flash("Можна забронювати лише від 1 до 7 днів!")
         return redirect(url_for('index'))
-        
+
     product = db.session.execute(db.select(Product).filter_by(id=product_id)).scalar_one_or_none()
-    
+    user = db.session.execute(db.select(User).filter_by(id=session['user_id'])).scalar_one_or_none()
+
+    if not product or not user:
+        flash("Помилка бронювання!")
+        return redirect(url_for('index'))
+
+    # Розрахунок ціни
+    if days == 1:
+        total_price = product.price
+    elif days == 2:
+        total_price = product.price * 1.9
+    elif days == 3:
+        total_price = product.price * 2.7
+    elif days == 4:
+        total_price = product.price * 3.4
+    elif days == 5:
+        total_price = product.price * 4.0
+    elif days == 6:
+        total_price = product.price * 4.5
+    elif days == 7:
+        total_price = product.price * 4.9
+    else:
+        total_price = product.price * days
+
+    # Перевірка балансу
+    if user.balance < total_price:
+        flash(f"Недостатньо коштів! Потрібно {total_price:.2f} грн, а у вас {user.balance:.2f} грн")
+        return redirect(url_for('room_detail', product_id=product_id))
+
     if product and not product.is_booked:
         product.is_booked = True
         product.booked_by = session['user_id']
         product.booking_days = days
+        user.balance -= total_price
         db.session.commit()
-        flash(f"Номер '{product.name}' успішно заброньовано!")
+        flash(f"Номер '{product.name}' успішно заброньовано! Списано {total_price:.2f} грн")
     else:
         flash("Цей номер уже заброньовано!")
-        
+
     return redirect(url_for('index'))
 
 
@@ -114,16 +147,37 @@ def book_hotel(product_id):
 def cancel_booking(product_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-        
+
     product = db.session.execute(db.select(Product).filter_by(id=product_id, booked_by=session['user_id'])).scalar_one_or_none()
-    
-    if product:
+    user = db.session.execute(db.select(User).filter_by(id=session['user_id'])).scalar_one_or_none()
+
+    if product and user:
+        # Розрахунок ціни для повернення
+        days = product.booking_days
+        if days == 1:
+            refund = product.price
+        elif days == 2:
+            refund = product.price * 1.9
+        elif days == 3:
+            refund = product.price * 2.7
+        elif days == 4:
+            refund = product.price * 3.4
+        elif days == 5:
+            refund = product.price * 4.0
+        elif days == 6:
+            refund = product.price * 4.5
+        elif days == 7:
+            refund = product.price * 4.9
+        else:
+            refund = product.price * days
+
         product.is_booked = False
         product.booked_by = None
         product.booking_days = 0
+        user.balance += refund
         db.session.commit()
-        flash(f"Бронювання скасовано.")
-        
+        flash(f"Бронювання скасовано. Повернено {refund:.2f} грн")
+
     return redirect(url_for('index'))
 
 
@@ -174,6 +228,32 @@ def login():
             return redirect(url_for('index'))
         flash('Помилка входу!')
     return render_template('login.html')
+
+
+@app.route('/add_balance', methods=['POST'])
+def add_balance():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    amount = request.form.get('amount', type=float)
+    print(f"DEBUG: Received amount: {amount}")
+
+    if amount and amount > 0 and amount <= 10000:
+        user = db.session.execute(db.select(User).filter_by(id=session['user_id'])).scalar_one_or_none()
+        if user:
+            old_balance = user.balance
+            user.balance += amount
+            db.session.commit()
+            print(f"DEBUG: Balance updated from {old_balance} to {user.balance}")
+            flash(f"Баланс поповнено на {amount:.2f} грн")
+        else:
+            print("DEBUG: User not found")
+            flash("Помилка: користувача не знайдено")
+    else:
+        print(f"DEBUG: Invalid amount: {amount}")
+        flash("Невірна сума! Введіть від 1 до 10000 грн")
+
+    return redirect(url_for('index'))
 
 
 @app.route('/logout')

@@ -11,7 +11,13 @@
     <div class="container">
         <div class="header-box">
             <h1>Вітаємо, {{ username }}!</h1>
-            <a href="{{ url_for('logout') }}" class="btn-logout">Вийти з акаунту</a>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="text-align: right;">
+                    <div style="font-size: 14px; color: #718096; font-weight: 500;">Ваш баланс</div>
+                    <div style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">{{ "%.2f"|format(balance) }} грн</div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn-logout">Вийти з акаунту</a>
+            </div>
         </div>
 
         {% with messages = get_flashed_messages() %}
@@ -24,8 +30,17 @@
 
         <div class="account-box">
             <h2>Особистий кабінет ({{ username }})</h2>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                <div>
+                    <h3>Поповнити баланс</h3>
+                    <form action="/add_balance" method="post" style="display: flex; flex-direction: column; gap: 12px;">
+                        <input type="number" name="amount" placeholder="Сума (грн)" min="1" max="10000" step="0.01" required style="padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; font-weight: 600;">
+                        <button type="submit" class="btn-book" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);">💰 Поповнити</button>
+                    </form>
+                    <p style="color: #a0aec0; font-size: 12px; margin-top: 10px;">Макс: 10,000 грн за раз</p>
+                </div>
+
                 <div>
                     <h3>Ваші бронювання</h3>
                     {% if my_bookings %}
