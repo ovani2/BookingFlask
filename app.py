@@ -18,23 +18,42 @@ with app.app_context():
 
 
 def calculate_price(base_price, days):
-    """Розраховує ціну бронювання залежно від кількості днів"""
-    if days == 1:
-        return base_price
-    elif days == 2:
-        return base_price * 1.9
-    elif days == 3:
-        return base_price * 2.7
-    elif days == 4:
-        return base_price * 3.4
-    elif days == 5:
-        return base_price * 4.0
-    elif days == 6:
-        return base_price * 4.5
-    elif days == 7:
-        return base_price * 4.9
+    """Розраховує ціну бронювання з урахуванням сезону та дня тижня"""
+    now = datetime.datetime.now()
+    month = now.month
+    weekday = now.weekday()
+
+
+    total = base_price * days
+
+
+    if month in [12, 1, 2, 6, 7, 8]:
+        seasonal_multiplier = 1.4
+
+    elif month in [3, 4, 5, 9, 10, 11]:
+        seasonal_multiplier = 1.0
     else:
-        return base_price * days
+        seasonal_multiplier = 1.0
+
+    if weekday in [5, 6]:
+        weekend_multiplier = 1.3
+    else:
+        weekend_multiplier = 1.0
+
+
+    if days >= 7:
+        duration_discount = 0.85
+    elif days >= 5:
+        duration_discount = 0.90
+    elif days >= 3:
+        duration_discount = 0.95
+    else:
+        duration_discount = 1.0
+
+
+    final_price = total * seasonal_multiplier * weekend_multiplier * duration_discount
+
+    return round(final_price, 2)
 
 
 @app.route('/')
@@ -69,44 +88,24 @@ def index():
 def room_detail(product_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-        
+
     product = db.session.execute(db.select(Product).filter_by(id=product_id)).scalar_one_or_none()
     if not product:
         flash("Номер не знайдено!")
         return redirect(url_for('index'))
-        
+
     days = request.args.get('days', 1, type=int)
-    if days < 1: days = 1
-    if days > 7: days = 7
-    
-    if days == 1:
-        total_price = product.price
-    
-    if days == 2:
-        total_price = product.price * 1.9
-    
-    if days == 3:
-        total_price = product.price * 1.8
-    
-    if days == 4:
-        total_price = product.price * 1.7
-    
-    if days == 5:
-        total_price = product.price * 1.6
-    
-    if days == 6:
-        total_price = product.price * 1.5
-    
-    if days == 7:
-        total_price = product.price * 1.4
-    
+    if days < 1:
+        days = 1
     if days > 7:
-        total_price = product.price * 1.4 * days
-    
+        days = 7
+
+    total_price = calculate_price(product.price, days)
+
     reviews = db.session.execute(
         db.select(Review).filter_by(product_id=product_id).order_by(Review.created_at.desc())
     ).scalars().all()
-    
+
     return render_template('room.html', product=product, days=days, total_price=total_price, reviews=reviews)
 
 
@@ -127,22 +126,7 @@ def book_hotel(product_id):
         flash("Помилка бронювання!")
         return redirect(url_for('index'))
 
-    if days == 1:
-        total_price = product.price
-    elif days == 2:
-        total_price = product.price * 1.9
-    elif days == 3:
-        total_price = product.price * 2.7
-    elif days == 4:
-        total_price = product.price * 3.4
-    elif days == 5:
-        total_price = product.price * 4.0
-    elif days == 6:
-        total_price = product.price * 4.5
-    elif days == 7:
-        total_price = product.price * 4.9
-    else:
-        total_price = product.price * days
+    total_price = calculate_price(product.price, days)
 
     if user.balance < total_price:
         flash(f"Недостатньо коштів! Потрібно {total_price:.2f} грн, а у вас {user.balance:.2f} грн")
