@@ -102,11 +102,46 @@ def room_detail(product_id):
 
     total_price = calculate_price(product.price, days)
 
-    reviews = db.session.execute(
+    raw_reviews = db.session.execute(
         db.select(Review).filter_by(product_id=product_id).order_by(Review.created_at.desc())
     ).scalars().all()
 
-    return render_template('room.html', product=product, days=days, total_price=total_price, reviews=reviews)
+    reviews = []
+    total_rating = 0
+    rating_count = 0
+
+    for r in raw_reviews:
+        review_text = r.text
+        review_rating = 5
+        if review_text.startswith("[RATING:"):
+            try:
+                parts = review_text.split("] ", 1)
+                review_rating = int(parts[0].replace("[RATING:", ""))
+                review_text = parts[1]
+            except:
+                pass
+        
+        total_rating += review_rating
+        rating_count += 1
+        
+        reviews.append({
+            "username": r.username,
+            "text": review_text,
+            "rating": review_rating,
+            "created_at": r.created_at
+        })
+
+    avg_rating = round(total_rating / rating_count, 1) if rating_count > 0 else 0.0
+
+    return render_template(
+        'room.html', 
+        product=product, 
+        days=days, 
+        total_price=total_price, 
+        reviews=reviews, 
+        avg_rating=avg_rating,
+        rating_count=rating_count
+    )
 
 
 @app.route('/book/<int:product_id>', methods=['POST'])
@@ -205,12 +240,15 @@ def add_review(product_id):
         return redirect(url_for('login'))
         
     text = request.form.get('review_text')
+    rating = request.form.get('review_rating', '5')
+    
     if text and text.strip() != "":
+        full_text = f"[RATING:{rating}] {text.strip()}"
         new_review = Review(
             product_id=product_id,
             user_id=session['user_id'],
             username=session['username'],
-            text=text.strip()
+            text=full_text
         )
         db.session.add(new_review)
         db.session.commit()
