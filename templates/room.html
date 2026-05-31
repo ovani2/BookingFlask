@@ -26,7 +26,12 @@
             <img src="{{ product.image_url }}" alt="{{ product.name }}" style="width: 100%; max-width: 400px; height: 280px; object-fit: cover; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
 
             <div style="flex: 1; min-width: 300px;">
-                <h2 style="margin-top: 0; color: #2d3748; font-size: 28px;">{{ product.name }}</h2>
+                <h2 style="margin-top: 0; color: #2d3748; font-size: 28px; margin-bottom: 5px;">{{ product.name }}</h2>
+                
+                <p style="font-size: 16px; margin: 0 0 15px 0; color: #e28743; font-weight: 600;">
+                    ⭐ {{ avg_rating }} / 5 (<span style="color: #718096; font-weight: normal;">{{ rating_count }} відгуків</span>)
+                </p>
+
                 <p style="color: #718096; line-height: 1.7; font-size: 15px;">{{ product.description }}</p>
                 <p style="font-size: 17px; color: #4a5568; margin: 15px 0;">Базова вартість: <strong style="color: #667eea;">{{ product.price }} грн</strong> / доба</p>
 
@@ -54,6 +59,16 @@
             <h3 style="margin-top: 0; color: #2d3748; font-size: 22px;">Відгуки про цей номер</h3>
 
             <form action="/add_review/{{ product.id }}" method="post" style="margin-bottom: 30px;">
+                <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                    <label style="font-weight: 600; color: #2d3748; font-size: 15px;">Ваша оцінка:</label>
+                    <select name="review_rating" style="width: auto; padding: 5px 10px;">
+                        <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                        <option value="4">⭐⭐⭐⭐ (4)</option>
+                        <option value="3">⭐⭐⭐ (3)</option>
+                        <option value="2">⭐⭐ (2)</option>
+                        <option value="1">⭐ (1)</option>
+                    </select>
+                </div>
                 <textarea name="review_text" placeholder="Залиште свій відгук про проживання тут..." required></textarea>
                 <button type="submit" class="btn-book" style="margin-top: 12px; width: auto; padding: 12px 28px; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);">Опублікувати відгук</button>
             </form>
@@ -62,8 +77,13 @@
                 {% if reviews %}
                     {% for review in reviews %}
                         <div class="review-item">
-                            <strong>{{ review.username }} <span style="font-size: 12px; color: #a0aec0; font-weight: normal; margin-left: 10px;">{{ review.created_at.strftime('%d.%m.%Y %H:%M') }}</span></strong>
-                            <p style="margin: 8px 0 0 0;">{{ review.text }}</p>
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                                <strong>{{ review.username }} <span style="font-size: 12px; color: #a0aec0; font-weight: normal; margin-left: 10px;">{{ review.created_at.strftime('%d.%m.%Y %H:%M') }}</span></strong>
+                                <span style="color: #e28743; font-weight: bold;">
+                                    {% if review.rating == 5 %}⭐⭐⭐⭐⭐{% elif review.rating == 4 %}⭐⭐⭐⭐{% elif review.rating == 3 %}⭐⭐⭐{% elif review.rating == 2 %}⭐⭐{% else %}⭐{% endif %}
+                                </span>
+                            </div>
+                            <p style="margin: 8px 0 0 0; color: #4a5568;">{{ review.text }}</p>
                         </div>
                     {% endfor %}
                 {% else %}
