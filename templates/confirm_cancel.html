@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Підтвердження скасування</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="container" style="max-width: 650px; margin-top: 60px;">
+        <div class="account-box" style="text-align: center; animation: scaleIn 0.4s ease;">
+
+            <div style="width: 80px; height: 80px; margin: 0 auto 25px; background: linear-gradient(135deg, #fc5c7d 0%, #6a82fb 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(252, 92, 125, 0.3);">
+                <span style="font-size: 42px;">⚠️</span>
+            </div>
+
+            <h2 style="color: #2d3748; margin-bottom: 15px; font-size: 28px;">Підтвердження скасування</h2>
+            <p style="color: #718096; font-size: 16px; margin-bottom: 35px;">Ви впевнені, що хочете скасувати це бронювання?</p>
+
+            <div style="background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%); padding: 30px; border-radius: 16px; margin-bottom: 35px; border: 2px solid #e2e8f0; text-align: left;">
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 2px solid #e2e8f0;">
+                    <span style="color: #718096; font-size: 15px; font-weight: 500;">Номер</span>
+                    <span style="color: #2d3748; font-size: 17px; font-weight: 700;">{{ product.name }}</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 2px solid #e2e8f0;">
+                    <span style="color: #718096; font-size: 15px; font-weight: 500;">Кількість днів</span>
+                    <span style="color: #2d3748; font-size: 17px; font-weight: 700;">{{ product.booking_days }} дн.</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #718096; font-size: 15px; font-weight: 500;">Сума повернення</span>
+                    <span style="font-size: 26px; font-weight: 800; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                        {{ "%.2f"|format(refund_amount) }} грн
+                    </span>
+                </div>
+            </div>
+
+            <div style="background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%); padding: 18px; border-radius: 12px; margin-bottom: 35px; border-left: 4px solid #38b2ac;">
+                <p style="color: #234e52; font-size: 14px; margin: 0; line-height: 1.6;">
+                    💡 Після скасування гроші будуть миттєво повернені на ваш баланс, а номер стане доступним для бронювання іншими користувачами.
+                </p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <a href="{{ url_for('index') }}" class="btn-book" style="background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%); box-shadow: 0 4px 15px rgba(160, 174, 192, 0.3); text-decoration: none; display: flex; align-items: center; justify-content: center; padding: 16px;">
+                    ← Повернутися
+                </a>
+
+                <form action="{{ url_for('cancel_booking', product_id=product.id) }}" method="post" style="margin: 0;">
+                    <button type="submit" class="btn-book" style="background: linear-gradient(135deg, #fc5c7d 0%, #6a82fb 100%); box-shadow: 0 4px 15px rgba(252, 92, 125, 0.4); width: 100%;">
+                        Скасувати бронювання
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

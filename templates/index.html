@@ -48,9 +48,7 @@
                             {% for book in my_bookings %}
                                 <div class="my-booking-item">
                                     <span><strong>{{ book.name }}</strong> ({{ book.booking_days }} дн.) — {{ book.price * book.booking_days }} грн</span>
-                                    <form action="/cancel_booking/{{ book.id }}" method="post" style="margin: 0;">
-                                        <button type="submit" class="btn-cancel">Скасувати</button>
-                                    </form>
+                                    <a href="{{ url_for('confirm_cancel', product_id=book.id) }}" class="btn-cancel" style="text-decoration: none; display: inline-block;">Скасувати</a>
                                 </div>
                             {% endfor %}
                         </div>

@@ -17,6 +17,26 @@ with app.app_context():
     generate_hotels()
 
 
+def calculate_price(base_price, days):
+    """Розраховує ціну бронювання залежно від кількості днів"""
+    if days == 1:
+        return base_price
+    elif days == 2:
+        return base_price * 1.9
+    elif days == 3:
+        return base_price * 2.7
+    elif days == 4:
+        return base_price * 3.4
+    elif days == 5:
+        return base_price * 4.0
+    elif days == 6:
+        return base_price * 4.5
+    elif days == 7:
+        return base_price * 4.9
+    else:
+        return base_price * days
+
+
 @app.route('/')
 def index():
     if 'user_id' not in session:
@@ -107,7 +127,6 @@ def book_hotel(product_id):
         flash("Помилка бронювання!")
         return redirect(url_for('index'))
 
-    # Розрахунок ціни
     if days == 1:
         total_price = product.price
     elif days == 2:
@@ -125,7 +144,6 @@ def book_hotel(product_id):
     else:
         total_price = product.price * days
 
-    # Перевірка балансу
     if user.balance < total_price:
         flash(f"Недостатньо коштів! Потрібно {total_price:.2f} грн, а у вас {user.balance:.2f} грн")
         return redirect(url_for('room_detail', product_id=product_id))
@@ -143,8 +161,36 @@ def book_hotel(product_id):
     return redirect(url_for('index'))
 
 
+@app.route('/confirm_cancel/<int:product_id>')
+def confirm_cancel(product_id):
+    """Сторінка підтвердження скасування бронювання"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    # Знаходимо бронювання користувача
+    product = db.session.execute(
+        db.select(Product).filter_by(id=product_id, booked_by=session['user_id'], is_booked=True)
+    ).scalar_one_or_none()
+
+    # Якщо бронювання не знайдено або воно не належить користувачу
+    if not product:
+        flash("Бронювання не знайдено або воно вам не належить!")
+        return redirect(url_for('index'))
+
+    # Розраховуємо суму повернення
+    refund_amount = calculate_price(product.price, product.booking_days)
+
+    # Показуємо сторінку підтвердження з усією інформацією
+    return render_template(
+        'confirm_cancel.html',
+        product=product,
+        refund_amount=refund_amount
+    )
+
+
 @app.route('/cancel_booking/<int:product_id>', methods=['POST'])
 def cancel_booking(product_id):
+    """Реальне скасування бронювання (POST-запит)"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
@@ -152,30 +198,18 @@ def cancel_booking(product_id):
     user = db.session.execute(db.select(User).filter_by(id=session['user_id'])).scalar_one_or_none()
 
     if product and user:
-        # Розрахунок ціни для повернення
-        days = product.booking_days
-        if days == 1:
-            refund = product.price
-        elif days == 2:
-            refund = product.price * 1.9
-        elif days == 3:
-            refund = product.price * 2.7
-        elif days == 4:
-            refund = product.price * 3.4
-        elif days == 5:
-            refund = product.price * 4.0
-        elif days == 6:
-            refund = product.price * 4.5
-        elif days == 7:
-            refund = product.price * 4.9
-        else:
-            refund = product.price * days
+        # Використовуємо нашу функцію для розрахунку повернення
+        refund = calculate_price(product.price, product.booking_days)
 
+        # Скасовуємо бронювання
         product.is_booked = False
         product.booked_by = None
         product.booking_days = 0
+
+        # Повертаємо гроші на баланс
         user.balance += refund
         db.session.commit()
+
         flash(f"Бронювання скасовано. Повернено {refund:.2f} грн")
 
     return redirect(url_for('index'))
