@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профіль користувача</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-box">
+            <h1>👤 Профіль користувача</h1>
+            <div style="display: flex; gap: 15px;">
+                <a href="{{ url_for('index') }}" class="btn-book" style="text-decoration: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">← Назад</a>
+                <a href="{{ url_for('booking_history') }}" class="btn-book" style="text-decoration: none; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">📋 Історія</a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="flash-message-global">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px; margin-bottom: 30px;">
+            <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); text-align: center;">
+                <img src="{{ user.avatar_url }}" alt="Avatar" style="width: 150px; height: 150px; border-radius: 50%; margin-bottom: 20px; border: 4px solid #667eea;">
+                <h2 style="color: #2d3748; margin-bottom: 10px;">{{ user.username }}</h2>
+                <div style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: white; padding: 15px; border-radius: 10px; margin-top: 20px;">
+                    <div style="font-size: 14px; margin-bottom: 5px;">Баланс</div>
+                    <div style="font-size: 28px; font-weight: 800;">{{ "%.2f"|format(user.balance) }} грн</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 10px; margin-top: 15px;">
+                    <div style="font-size: 14px; margin-bottom: 5px;">Витрачено на бронювання</div>
+                    <div style="font-size: 24px; font-weight: 700;">{{ "%.2f"|format(total_spent) }} грн</div>
+                </div>
+            </div>
+
+            <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+                <h2 style="color: #2d3748; margin-bottom: 20px;">Редагувати профіль</h2>
+                <form action="{{ url_for('update_profile') }}" method="post" style="display: flex; flex-direction: column; gap: 20px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600;">📧 Email</label>
+                        <input type="email" name="email" value="{{ user.email or '' }}" placeholder="example@mail.com" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600;">📱 Телефон</label>
+                        <input type="tel" name="phone" value="{{ user.phone or '' }}" placeholder="+380 XX XXX XX XX" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600;">🖼️ URL аватара</label>
+                        <input type="url" name="avatar_url" value="{{ user.avatar_url or '' }}" placeholder="https://example.com/avatar.png" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px;">
+                        <p style="font-size: 12px; color: #a0aec0; margin-top: 5px;">Використовуйте https://api.dicebear.com/7.x/avataaars/svg?seed=yourname для випадкового аватара</p>
+                    </div>
+                    <button type="submit" class="btn-book" style="width: 100%; padding: 15px;">Зберегти зміни</button>
+                </form>
+            </div>
+        </div>
+
+        <h2 style="color: #2d3748; margin-bottom: 20px;">Активні бронювання</h2>
+        {% if active_bookings %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-bottom: 40px;">
+                {% for booking in active_bookings %}
+                    {% set product = namespace() %}
+                    {% set product.data = namespace() %}
+                    {% for p in [booking] %}
+                        <div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); border-left: 5px solid #48bb78;">
+                            <h3 style="color: #2d3748; margin-bottom: 10px;">Бронювання #{{ booking.id }}</h3>
+                            <p style="color: #4a5568; margin: 5px 0;"><strong>Заїзд:</strong> {{ booking.check_in.strftime('%d.%m.%Y') }}</p>
+                            <p style="color: #4a5568; margin: 5px 0;"><strong>Виїзд:</strong> {{ booking.check_out.strftime('%d.%m.%Y') }}</p>
+                            <p style="color: #4a5568; margin: 5px 0;"><strong>Днів:</strong> {{ (booking.check_out - booking.check_in).days }}</p>
+                            <p style="color: #48bb78; margin: 10px 0; font-size: 18px; font-weight: 700;">{{ "%.2f"|format(booking.total_price) }} грн</p>
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="background: white; padding: 40px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); text-align: center; margin-bottom: 40px;">
+                <p style="color: #718096; font-size: 16px;">Немає активних бронювань</p>
+            </div>
+        {% endif %}
+
+        <h2 style="color: #2d3748; margin-bottom: 20px;">Останні бронювання</h2>
+        {% if past_bookings %}
+            <div style="background: white; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead style="background: #f7fafc;">
+                        <tr>
+                            <th style="padding: 12px; text-align: left; color: #4a5568; font-weight: 600; font-size: 14px;">ID</th>
+                            <th style="padding: 12px; text-align: left; color: #4a5568; font-weight: 600; font-size: 14px;">Дати</th>
+                            <th style="padding: 12px; text-align: right; color: #4a5568; font-weight: 600; font-size: 14px;">Ціна</th>
+                            <th style="padding: 12px; text-align: center; color: #4a5568; font-weight: 600; font-size: 14px;">Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in past_bookings %}
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 12px; color: #2d3748; font-weight: 600;">#{{ booking.id }}</td>
+                                <td style="padding: 12px; color: #4a5568;">{{ booking.check_in.strftime('%d.%m.%Y') }} - {{ booking.check_out.strftime('%d.%m.%Y') }}</td>
+                                <td style="padding: 12px; text-align: right; color: #48bb78; font-weight: 700;">{{ "%.2f"|format(booking.total_price) }} грн</td>
+                                <td style="padding: 12px; text-align: center;">
+                                    {% if booking.status == 'cancelled' %}
+                                        <span style="background: #fed7d7; color: #742a2a; padding: 4px 12px; border-radius: 15px; font-size: 13px; font-weight: 600;">Скасовано</span>
+                                    {% else %}
+                                        <span style="background: #e2e8f0; color: #4a5568; padding: 4px 12px; border-radius: 15px; font-size: 13px; font-weight: 600;">Завершено</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div style="background: white; padding: 40px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); text-align: center;">
+                <p style="color: #718096; font-size: 16px;">Історія порожня</p>
+            </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>

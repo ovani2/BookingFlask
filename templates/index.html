@@ -16,6 +16,8 @@
                     <div style="font-size: 14px; color: #718096; font-weight: 500;">Ваш баланс</div>
                     <div style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">{{ "%.2f"|format(balance) }} грн</div>
                 </div>
+                <a href="{{ url_for('profile') }}" class="btn-book" style="text-decoration: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">👤 Профіль</a>
+                <a href="{{ url_for('booking_history') }}" class="btn-book" style="text-decoration: none; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">📋 Історія</a>
                 <a href="{{ url_for('logout') }}" class="btn-logout">Вийти з акаунту</a>
             </div>
         </div>
@@ -76,6 +78,34 @@
         </div>
 
         <h2 class="section-title">Доступні готельні номери</h2>
+
+        <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 30px;">
+            <h3 style="margin-bottom: 20px; color: #2d3748;">🔍 Пошук та фільтри</h3>
+            <form method="get" action="/" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto auto; gap: 15px; align-items: end;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">Назва номера</label>
+                    <input type="text" name="search" placeholder="Наприклад: Люкс" value="{{ search_query or '' }}" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">Мін. ціна (грн)</label>
+                    <input type="number" name="min_price" placeholder="0" value="{{ min_price or '' }}" step="100" min="0" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">Макс. ціна (грн)</label>
+                    <input type="number" name="max_price" placeholder="5000" value="{{ max_price or '' }}" step="100" min="0" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px;">
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; padding: 12px 0;">
+                    <input type="checkbox" name="available_only" value="true" id="available_only" {% if available_only %}checked{% endif %} style="width: 20px; height: 20px; cursor: pointer;">
+                    <label for="available_only" style="color: #4a5568; font-weight: 600; font-size: 14px; cursor: pointer;">Тільки вільні</label>
+                </div>
+                <button type="submit" class="btn-book" style="padding: 12px 30px; white-space: nowrap;">Знайти</button>
+            </form>
+            {% if search_query or min_price or max_price or available_only %}
+                <div style="margin-top: 15px;">
+                    <a href="/" style="color: #e53e3e; text-decoration: none; font-weight: 600; font-size: 14px;">✖ Скинути фільтри</a>
+                </div>
+            {% endif %}
+        </div>
 
         <div class="hotel-grid">
             {% for product in products %}

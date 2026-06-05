@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import String, Float, ForeignKey, Text, DateTime, Boolean, Integer
+from sqlalchemy import String, Float, ForeignKey, Text, DateTime, Boolean, Integer, Date
 from datetime import datetime
 
 class Base(DeclarativeBase):
@@ -14,6 +14,9 @@ class User(db.Model):
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(256), nullable=False)
     balance: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    email: Mapped[str] = mapped_column(String(100), nullable=True)
+    phone: Mapped[str] = mapped_column(String(20), nullable=True)
+    avatar_url: Mapped[str] = mapped_column(String(200), nullable=True, default="https://api.dicebear.com/7.x/avataaars/svg?seed=default")
 
 class Product(db.Model):
     __tablename__ = "products"
@@ -34,3 +37,15 @@ class Review(db.Model):
     username: Mapped[str] = mapped_column(String(50), nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+class Booking(db.Model):
+    __tablename__ = "bookings"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    check_in: Mapped[datetime] = mapped_column(Date, nullable=False)
+    check_out: Mapped[datetime] = mapped_column(Date, nullable=False)
+    total_price: Mapped[float] = mapped_column(Float, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    cancelled_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
