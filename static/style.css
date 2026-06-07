@@ -273,7 +273,7 @@ body::before {
 
 .btn-cancel {
     padding: 6px 14px;
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: linear-gradient(135deg, #fc5c7d 0%, #e53e3e 100%);
     color: white;
     border: none;
     border-radius: 8px;
@@ -281,11 +281,44 @@ body::before {
     font-size: 13px;
     cursor: pointer;
     transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
 }
 
 .btn-cancel:hover {
     transform: scale(1.05);
-    box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+    box-shadow: 0 6px 20px rgba(229, 62, 62, 0.6);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(72, 187, 120, 0.6);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #fc5c7d 0%, #e53e3e 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(229, 62, 62, 0.6);
 }
 
 /* Auth Pages */
@@ -419,6 +452,30 @@ body::before {
     font-weight: 600;
     border: 1px solid #68d391;
     animation: slideDown 0.5s ease;
+}
+
+.flash-success {
+    background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%);
+    color: #22543d;
+    padding: 14px 18px;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: 600;
+    border: 1px solid #68d391;
+    animation: slideDown 0.5s ease;
+}
+
+.flash-error {
+    color: #c53030;
+    background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+    padding: 14px 18px;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: 600;
+    border: 1px solid #fc8181;
+    animation: shake 0.5s ease;
 }
 
 /* Bookings List */

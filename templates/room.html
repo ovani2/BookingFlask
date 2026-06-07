@@ -17,7 +17,11 @@
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 {% for message in messages %}
-                    <p class="flash-message-global">{{ message }}</p>
+                    {% if 'успішно' in message or 'Успішно' in message %}
+                        <p class="flash-success">{{ message }}</p>
+                    {% else %}
+                        <p class="flash-error">{{ message }}</p>
+                    {% endif %}
                 {% endfor %}
             {% endif %}
         {% endwith %}

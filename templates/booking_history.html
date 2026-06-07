@@ -20,7 +20,11 @@
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 {% for message in messages %}
-                    <p class="flash-message-global">{{ message }}</p>
+                    {% if 'успішно' in message or 'Успішно' in message %}
+                        <p class="flash-success">{{ message }}</p>
+                    {% else %}
+                        <p class="flash-error">{{ message }}</p>
+                    {% endif %}
                 {% endfor %}
             {% endif %}
         {% endwith %}
@@ -61,9 +65,12 @@
                                 </td>
                                 <td style="padding: 15px; text-align: center;">
                                     {% if item.booking.status == 'active' %}
-                                        <form action="{{ url_for('cancel_booking_new', booking_id=item.booking.id) }}" method="post" style="display: inline;" onsubmit="return confirm('Ви впевнені, що хочете скасувати це бронювання?');">
-                                            <button type="submit" class="btn-cancel" style="border: none; cursor: pointer; padding: 8px 16px; font-size: 14px;">Скасувати</button>
-                                        </form>
+                                        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                                            <button onclick="showExtendForm({{ item.booking.id }}, '{{ item.product.name }}', {{ item.product.price }})" class="btn-success" style="border: none; cursor: pointer; padding: 8px 16px; font-size: 14px;">📅 Продовжити</button>
+                                            <form action="{{ url_for('cancel_booking_new', booking_id=item.booking.id) }}" method="post" style="display: inline;" onsubmit="return confirm('Ви впевнені, що хочете скасувати це бронювання?');">
+                                                <button type="submit" class="btn-cancel" style="border: none; cursor: pointer; padding: 8px 16px; font-size: 14px;">❌ Скасувати</button>
+                                            </form>
+                                        </div>
                                     {% else %}
                                         <span style="color: #a0aec0; font-size: 13px;">—</span>
                                     {% endif %}
@@ -82,6 +89,64 @@
             </div>
         {% endif %}
     </div>
+
+    <!-- Модальне вікно для продовження бронювання -->
+    <div id="extendModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <h2 style="margin-top: 0; color: #2d3748; margin-bottom: 20px;">📅 Продовжити бронювання</h2>
+            <p style="color: #718096; margin-bottom: 20px;">Номер: <strong id="extend_hotel_name" style="color: #2d3748;"></strong></p>
+            <p style="color: #718096; margin-bottom: 20px;">Базова ціна: <strong id="extend_base_price" style="color: #48bb78;"></strong> грн/доба</p>
+
+            <form id="extendForm" method="post" style="display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">Кількість додаткових днів:</label>
+                    <input type="number" id="extend_extra_days" name="extra_days" required min="1" max="30" value="1" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px;" oninput="calculateExtendPrice()">
+                    <p style="margin-top: 8px; color: #a0aec0; font-size: 13px;">Максимум: 30 днів</p>
+                </div>
+
+                <div id="extendPriceInfo" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: white; padding: 15px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 14px; margin-bottom: 5px;">Вартість продовження:</div>
+                    <div style="font-size: 28px; font-weight: 800;" id="extendTotalPrice">0 грн</div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button type="submit" class="btn-success" style="flex: 1; padding: 14px; font-size: 16px; border: none; cursor: pointer; border-radius: 12px; font-weight: 700;">✅ Продовжити</button>
+                    <button type="button" onclick="hideExtendForm()" class="btn-danger" style="flex: 1; padding: 14px; font-size: 16px; border: none; cursor: pointer; border-radius: 12px; font-weight: 700;">❌ Скасувати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentBasePrice = 0;
+
+        function showExtendForm(bookingId, hotelName, basePrice) {
+            currentBasePrice = basePrice;
+            document.getElementById('extend_hotel_name').textContent = hotelName;
+            document.getElementById('extend_base_price').textContent = basePrice;
+            document.getElementById('extendForm').action = '/extend_booking/' + bookingId;
+            document.getElementById('extend_extra_days').value = 1;
+            calculateExtendPrice();
+            document.getElementById('extendModal').style.display = 'flex';
+        }
+
+        function hideExtendForm() {
+            document.getElementById('extendModal').style.display = 'none';
+        }
+
+        function calculateExtendPrice() {
+            const days = parseInt(document.getElementById('extend_extra_days').value) || 0;
+            const totalPrice = (currentBasePrice * days).toFixed(2);
+            document.getElementById('extendTotalPrice').textContent = totalPrice + ' грн';
+        }
+
+        // Закриття модального вікна при кліку поза ним
+        document.getElementById('extendModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideExtendForm();
+            }
+        });
+    </script>
 
 </body>
 </html>

@@ -17,6 +17,7 @@ class User(db.Model):
     email: Mapped[str] = mapped_column(String(100), nullable=True)
     phone: Mapped[str] = mapped_column(String(20), nullable=True)
     avatar_url: Mapped[str] = mapped_column(String(200), nullable=True, default="https://api.dicebear.com/7.x/avataaars/svg?seed=default")
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 class Product(db.Model):
     __tablename__ = "products"

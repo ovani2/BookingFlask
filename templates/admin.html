@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Адмін-панель</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-box">
+            <h1>🔧 Адміністративна панель</h1>
+            <div style="display: flex; gap: 15px;">
+                <a href="{{ url_for('index') }}" class="btn-book" style="text-decoration: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">← До головної</a>
+                <a href="{{ url_for('logout') }}" class="btn-logout">Вийти</a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    {% if 'успішно' in message or 'Успішно' in message %}
+                        <p class="flash-success">{{ message }}</p>
+                    {% else %}
+                        <p class="flash-error">{{ message }}</p>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="account-box">
+            <h2>➕ Додати новий готель</h2>
+            <form action="{{ url_for('admin_add_hotel') }}" method="post" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">Назва готелю:</label>
+                    <input type="text" name="name" required placeholder="Наприклад: Номер Люкс №201" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">Ціна за добу (грн):</label>
+                    <input type="number" name="price" required min="1" step="0.01" placeholder="1500" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px;">
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">Опис:</label>
+                    <textarea name="description" rows="3" placeholder="Опис готельного номера..." style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; resize: vertical;"></textarea>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">URL зображення:</label>
+                    <input type="url" name="image_url" placeholder="https://example.com/image.jpg" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px;">
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <button type="submit" class="btn-success" style="width: 100%; padding: 14px; font-size: 16px;">➕ Додати готель</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="account-box">
+            <h2>📋 Список всіх готелів ({{ products|length }})</h2>
+
+            {% if products %}
+                <div style="max-height: 600px; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; position: sticky; top: 0; z-index: 10;">
+                            <tr>
+                                <th style="padding: 12px; text-align: left; font-weight: 700;">ID</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 700;">Назва</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 700;">Ціна</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 700;">Опис</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 700;">Статус</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 700;">Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                                <tr style="border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 12px; font-weight: 600; color: #667eea;">{{ product.id }}</td>
+                                    <td style="padding: 12px; font-weight: 600; color: #2d3748;">{{ product.name }}</td>
+                                    <td style="padding: 12px; font-weight: 700; color: #48bb78;">{{ product.price }} грн</td>
+                                    <td style="padding: 12px; color: #718096; font-size: 13px;">{{ product.description[:60] }}{% if product.description|length > 60 %}...{% endif %}</td>
+                                    <td style="padding: 12px; text-align: center;">
+                                        {% if product.is_booked %}
+                                            <span style="background: #fed7d7; color: #742a2a; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">Заброньовано</span>
+                                        {% else %}
+                                            <span style="background: #c6f6d5; color: #22543d; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">Вільний</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding: 12px; text-align: center;">
+                                        <button onclick="showEditForm({{ product.id }}, '{{ product.name }}', {{ product.price }}, '{{ product.description }}', '{{ product.image_url }}')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-right: 5px;">✏️ Редагувати</button>
+                                        <form action="{{ url_for('admin_delete_hotel', product_id=product.id) }}" method="post" style="display: inline;" onsubmit="return confirm('Ви впевнені, що хочете видалити готель {{ product.name }}?');">
+                                            <button type="submit" class="btn-danger" style="padding: 6px 12px; font-size: 13px;">🗑️ Видалити</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p style="text-align: center; color: #a0aec0; font-size: 16px; padding: 40px;">Немає готелів у базі даних</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Модальне вікно для редагування -->
+    <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 40px; border-radius: 20px; max-width: 600px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <h2 style="margin-top: 0; color: #2d3748; margin-bottom: 25px;">✏️ Редагувати готель</h2>
+            <form id="editForm" method="post" style="display: flex; flex-direction: column; gap: 15px;">
+                <input type="hidden" id="edit_product_id" name="product_id">
+
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">Назва:</label>
+                    <input type="text" id="edit_name" name="name" required style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px;">
+                </div>
+
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">Ціна (грн):</label>
+                    <input type="number" id="edit_price" name="price" required min="1" step="0.01" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px;">
+                </div>
+
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">Опис:</label>
+                    <textarea id="edit_description" name="description" rows="3" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; resize: vertical;"></textarea>
+                </div>
+
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 600; font-size: 14px;">URL зображення:</label>
+                    <input type="url" id="edit_image_url" name="image_url" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px;">
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button type="submit" class="btn-success" style="flex: 1; padding: 14px; font-size: 16px;">💾 Зберегти зміни</button>
+                    <button type="button" onclick="hideEditForm()" class="btn-danger" style="flex: 1; padding: 14px; font-size: 16px;">❌ Скасувати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function showEditForm(id, name, price, description, imageUrl) {
+            document.getElementById('edit_product_id').value = id;
+            document.getElementById('edit_name').value = name;
+            document.getElementById('edit_price').value = price;
+            document.getElementById('edit_description').value = description;
+            document.getElementById('edit_image_url').value = imageUrl;
+
+            document.getElementById('editForm').action = '/admin/edit_hotel/' + id;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function hideEditForm() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // Закриття модального вікна при кліку поза ним
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideEditForm();
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -17,20 +17,28 @@ with app.app_context():
     db.create_all()
     generate_hotels()
 
+    admin = db.session.execute(db.select(User).filter_by(username='admin')).scalar_one_or_none()
+    if not admin:
+        admin_user = User(
+            username='admin',
+            password=generate_password_hash('admin'),
+            balance=0.0,
+            is_admin=True
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        print("Адмін-акаунт створено: username='admin', password='admin'")
+
 
 def calculate_price(base_price, days):
-    """Розраховує ціну бронювання з урахуванням сезону та дня тижня"""
     now = datetime.datetime.now()
     month = now.month
     weekday = now.weekday()
 
-
     total = base_price * days
-
 
     if month in [12, 1, 2, 6, 7, 8]:
         seasonal_multiplier = 1.4
-
     elif month in [3, 4, 5, 9, 10, 11]:
         seasonal_multiplier = 1.0
     else:
@@ -41,7 +49,6 @@ def calculate_price(base_price, days):
     else:
         weekend_multiplier = 1.0
 
-
     if days >= 7:
         duration_discount = 0.85
     elif days >= 5:
@@ -51,14 +58,12 @@ def calculate_price(base_price, days):
     else:
         duration_discount = 1.0
 
-
     final_price = total * seasonal_multiplier * weekend_multiplier * duration_discount
 
     return round(final_price, 2)
 
 
 def is_room_available(product_id, check_in, check_out):
-    """Перевіряє чи доступний номер в заданий період"""
     overlapping_bookings = db.session.execute(
         db.select(Booking).filter(
             Booking.product_id == product_id,
@@ -101,20 +106,17 @@ def index():
         db.select(Product).filter_by(booked_by=session['user_id'], is_booked=True)
     ).scalars().all()
 
-    my_reviews = db.session.execute(
-        db.select(Review).filter_by(user_id=session['user_id']).order_by(Review.created_at.desc())
-    ).scalars().all()
-
     user = db.session.execute(db.select(User).filter_by(id=session['user_id'])).scalar_one_or_none()
     balance = user.balance if user else 0.0
+    is_admin = user.is_admin if user else False
 
     return render_template(
         'index.html',
         products=products,
         my_bookings=my_bookings,
-        my_reviews=my_reviews,
         username=session.get('username'),
         balance=balance,
+        is_admin=is_admin,
         search_query=search_query,
         min_price=min_price,
         max_price=max_price,
@@ -242,24 +244,19 @@ def book_hotel(product_id):
 
 @app.route('/confirm_cancel/<int:product_id>')
 def confirm_cancel(product_id):
-    """Сторінка підтвердження скасування бронювання"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    # Знаходимо бронювання користувача
     product = db.session.execute(
         db.select(Product).filter_by(id=product_id, booked_by=session['user_id'], is_booked=True)
     ).scalar_one_or_none()
 
-    # Якщо бронювання не знайдено або воно не належить користувачу
     if not product:
         flash("Бронювання не знайдено або воно вам не належить!")
         return redirect(url_for('index'))
 
-    # Розраховуємо суму повернення
     refund_amount = calculate_price(product.price, product.booking_days)
 
-    # Показуємо сторінку підтвердження з усією інформацією
     return render_template(
         'confirm_cancel.html',
         product=product,
@@ -269,7 +266,6 @@ def confirm_cancel(product_id):
 
 @app.route('/cancel_booking/<int:product_id>', methods=['POST'])
 def cancel_booking(product_id):
-    """Реальне скасування бронювання (POST-запит)"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
@@ -277,15 +273,12 @@ def cancel_booking(product_id):
     user = db.session.execute(db.select(User).filter_by(id=session['user_id'])).scalar_one_or_none()
 
     if product and user:
-        # Використовуємо нашу функцію для розрахунку повернення
         refund = calculate_price(product.price, product.booking_days)
 
-        # Скасовуємо бронювання
         product.is_booked = False
         product.booked_by = None
         product.booking_days = 0
 
-        # Повертаємо гроші на баланс
         user.balance += refund
         db.session.commit()
 
@@ -296,7 +289,6 @@ def cancel_booking(product_id):
 
 @app.route('/cancel_booking_new/<int:booking_id>', methods=['POST'])
 def cancel_booking_new(booking_id):
-    """Скасування бронювання з нової системи"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
@@ -322,7 +314,6 @@ def cancel_booking_new(booking_id):
 
 @app.route('/booking_history')
 def booking_history():
-    """Сторінка з історією всіх бронювань користувача"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
@@ -345,7 +336,6 @@ def booking_history():
 
 @app.route('/profile')
 def profile():
-    """Сторінка профілю користувача"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
@@ -381,7 +371,6 @@ def profile():
 
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
-    """Оновлення профілю користувача"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
@@ -483,6 +472,195 @@ def add_balance():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+
+@app.route('/admin')
+def admin_panel():
+
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user = db.session.execute(db.select(User).filter_by(id=session['user_id'])).scalar_one_or_none()
+    if not user or not user.is_admin:
+        flash("Доступ заборонено! Тільки для адміністраторів.")
+        return redirect(url_for('index'))
+
+    products = db.session.execute(db.select(Product).order_by(Product.id)).scalars().all()
+
+    return render_template('admin.html', products=products, username=session.get('username'))
+
+
+@app.route('/admin/add_hotel', methods=['POST'])
+def admin_add_hotel():
+
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user = db.session.execute(db.select(User).filter_by(id=session['user_id'])).scalar_one_or_none()
+    if not user or not user.is_admin:
+        flash("Доступ заборонено!")
+        return redirect(url_for('index'))
+
+    name = request.form.get('name', '').strip()
+    price = request.form.get('price', type=float)
+    description = request.form.get('description', '').strip()
+    image_url = request.form.get('image_url', '').strip()
+
+    if not name or not price or price <= 0:
+        flash("Назва та ціна обов'язкові!")
+        return redirect(url_for('admin_panel'))
+
+    new_product = Product(
+        name=name,
+        price=price,
+        description=description or "Опис готелю",
+        image_url=image_url or "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=500"
+    )
+
+    db.session.add(new_product)
+    db.session.commit()
+
+    flash(f"Готель '{name}' успішно додано!")
+    return redirect(url_for('admin_panel'))
+
+
+@app.route('/admin/edit_hotel/<int:product_id>', methods=['POST'])
+def admin_edit_hotel(product_id):
+
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user = db.session.execute(db.select(User).filter_by(id=session['user_id'])).scalar_one_or_none()
+    if not user or not user.is_admin:
+        flash("Доступ заборонено!")
+        return redirect(url_for('index'))
+
+    product = db.session.execute(db.select(Product).filter_by(id=product_id)).scalar_one_or_none()
+
+    if not product:
+        flash("Готель не знайдено!")
+        return redirect(url_for('admin_panel'))
+
+    name = request.form.get('name', '').strip()
+    price = request.form.get('price', type=float)
+    description = request.form.get('description', '').strip()
+    image_url = request.form.get('image_url', '').strip()
+
+    if name:
+        product.name = name
+    if price and price > 0:
+        product.price = price
+    if description:
+        product.description = description
+    if image_url:
+        product.image_url = image_url
+
+    db.session.commit()
+
+    flash(f"Готель '{product.name}' успішно оновлено!")
+    return redirect(url_for('admin_panel'))
+
+
+@app.route('/admin/delete_hotel/<int:product_id>', methods=['POST'])
+def admin_delete_hotel(product_id):
+
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user = db.session.execute(db.select(User).filter_by(id=session['user_id'])).scalar_one_or_none()
+    if not user or not user.is_admin:
+        flash("Доступ заборонено!")
+        return redirect(url_for('index'))
+
+    product = db.session.execute(db.select(Product).filter_by(id=product_id)).scalar_one_or_none()
+
+    if not product:
+        flash("Готель не знайдено!")
+        return redirect(url_for('admin_panel'))
+
+    active_bookings = db.session.execute(
+        db.select(Booking).filter_by(product_id=product_id, status='active')
+    ).scalars().all()
+
+    if active_bookings:
+        flash(f"Неможливо видалити готель '{product.name}' - є активні бронювання!")
+        return redirect(url_for('admin_panel'))
+
+    hotel_name = product.name
+    db.session.delete(product)
+    db.session.commit()
+
+    flash(f"Готель '{hotel_name}' успішно видалено!")
+    return redirect(url_for('admin_panel'))
+
+
+@app.route('/extend_booking/<int:booking_id>', methods=['POST'])
+def extend_booking(booking_id):
+
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    booking = db.session.execute(
+        db.select(Booking).filter_by(id=booking_id, user_id=session['user_id'], status='active')
+    ).scalar_one_or_none()
+
+    if not booking:
+        flash("Бронювання не знайдено або вже скасоване!")
+        return redirect(url_for('booking_history'))
+
+    extra_days = request.form.get('extra_days', type=int)
+
+    if not extra_days or extra_days <= 0:
+        flash("Вкажіть кількість днів для продовження!")
+        return redirect(url_for('booking_history'))
+
+    if extra_days > 30:
+        flash("Максимальне продовження - 30 днів!")
+        return redirect(url_for('booking_history'))
+
+    new_check_out = booking.check_out + timedelta(days=extra_days)
+
+    product = db.session.execute(db.select(Product).filter_by(id=booking.product_id)).scalar_one_or_none()
+
+    if not product:
+        flash("Готель не знайдено!")
+        return redirect(url_for('booking_history'))
+
+    overlapping_bookings = db.session.execute(
+        db.select(Booking).filter(
+            Booking.product_id == booking.product_id,
+            Booking.status == 'active',
+            Booking.id != booking_id,
+            Booking.check_in < new_check_out,
+            Booking.check_out > booking.check_out
+        )
+    ).scalars().all()
+
+    if overlapping_bookings:
+        flash(f"Неможливо продовжити бронювання - номер вже заброньовано на ці дати!")
+        return redirect(url_for('booking_history'))
+
+    extra_price = calculate_price(product.price, extra_days)
+
+    user = db.session.execute(db.select(User).filter_by(id=session['user_id'])).scalar_one_or_none()
+
+    if not user:
+        flash("Користувача не знайдено!")
+        return redirect(url_for('booking_history'))
+
+    if user.balance < extra_price:
+        flash(f"Недостатньо коштів! Потрібно {extra_price:.2f} грн, а у вас {user.balance:.2f} грн")
+        return redirect(url_for('booking_history'))
+
+    booking.check_out = new_check_out
+    booking.total_price += extra_price
+    user.balance -= extra_price
+
+    db.session.commit()
+
+    flash(f"Бронювання успішно продовжено на {extra_days} дн. до {new_check_out.strftime('%d.%m.%Y')}! Списано {extra_price:.2f} грн")
+    return redirect(url_for('booking_history'))
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

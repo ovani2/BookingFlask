@@ -17,7 +17,10 @@
                     <div style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">{{ "%.2f"|format(balance) }} грн</div>
                 </div>
                 <a href="{{ url_for('profile') }}" class="btn-book" style="text-decoration: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">👤 Профіль</a>
-                <a href="{{ url_for('booking_history') }}" class="btn-book" style="text-decoration: none; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">📋 Історія</a>
+                <a href="{{ url_for('booking_history') }}" class="btn-book" style="text-decoration: none; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">📋 Бронювання</a>
+                {% if is_admin %}
+                <a href="{{ url_for('admin_panel') }}" class="btn-book" style="text-decoration: none; background: linear-gradient(135deg, #fc5c7d 0%, #e53e3e 100%);">🔧 Адмін-панель</a>
+                {% endif %}
                 <a href="{{ url_for('logout') }}" class="btn-logout">Вийти з акаунту</a>
             </div>
         </div>
@@ -25,7 +28,11 @@
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 {% for message in messages %}
-                    <p class="flash-message-global">{{ message }}</p>
+                    {% if 'успішно' in message or 'Успішно' in message or 'поповнено' in message %}
+                        <p class="flash-success">{{ message }}</p>
+                    {% else %}
+                        <p class="flash-error">{{ message }}</p>
+                    {% endif %}
                 {% endfor %}
             {% endif %}
         {% endwith %}
@@ -33,7 +40,7 @@
         <div class="account-box">
             <h2>Особистий кабінет ({{ username }})</h2>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div>
                     <h3>Поповнити баланс</h3>
                     <form action="/add_balance" method="post" style="display: flex; flex-direction: column; gap: 12px;">
@@ -44,7 +51,7 @@
                 </div>
 
                 <div>
-                    <h3>Ваші бронювання</h3>
+                    <h3>Бронювання</h3>
                     {% if my_bookings %}
                         <div class="my-bookings-list">
                             {% for book in my_bookings %}
@@ -56,22 +63,6 @@
                         </div>
                     {% else %}
                         <p style="color: #777; font-style: italic; font-size: 14px;">Немає активних бронювань.</p>
-                    {% endif %}
-                </div>
-
-                <div>
-                    <h3>Ваші відгуки на сайті</h3>
-                    {% if my_reviews %}
-                        <div class="my-bookings-list" style="max-height: 200px; overflow-y: auto;">
-                            {% for r in my_reviews %}
-                                <div style="background: #fdfdfd; padding: 8px; border-radius: 4px; border-left: 3px solid #17a2b8; margin-bottom: 8px; font-size: 13px;">
-                                    <span style="color: #666; font-size: 11px;">{{ r.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
-                                    <p style="margin: 4px 0 0 0; color: #333;">{{ r.text }}</p>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p style="color: #777; font-style: italic; font-size: 14px;">Ви ще не залишали відгуків.</p>
                     {% endif %}
                 </div>
             </div>
